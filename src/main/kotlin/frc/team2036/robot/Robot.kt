@@ -5,8 +5,18 @@ import edu.wpi.first.wpilibj.PWMTalonSRX
 import frc.team2036.robot.knightarmor.KnightBot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.drive.MecanumDrive
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 
 import frc.team2036.robot.vision.linesensing.*;
+
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+
+import edu.wpi.cscore.CvSink;
+import edu.wpi.cscore.CvSource;
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.IterativeRobot;
 
 class Robot : KnightBot() {
 
@@ -18,6 +28,10 @@ class Robot : KnightBot() {
 
     lateinit var line_runner: VisionRunner
 
+    lateinit var outputStream: CvSource
+
+
+
     override fun robotInit() {
         this.controller = XboxController(1)
         this.drivetrain = MecanumDrive(PWMTalonSRX(0), PWMTalonSRX(1), PWMTalonSRX(2), PWMTalonSRX(3))
@@ -25,9 +39,27 @@ class Robot : KnightBot() {
         this.grabMotor1 = PWMTalonSRX(5)
         this.grabMotor2 = PWMTalonSRX(6)
 
-        line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8)
+        line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3)
         line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
         line_runner.start()
+
+        SmartDashboard.putNumber("vision-x-cof", 0.007)
+        SmartDashboard.putNumber("vision-y-cof", 0.007)
+        SmartDashboard.putNumber("vision-theta-cof", 0.005)
+
+        SmartDashboard.putNumber("vision-x-max", 0.3)
+        SmartDashboard.putNumber("vision-y-max", 0.3)
+        SmartDashboard.putNumber("vision-theta-max", 0.3)
+
+        SmartDashboard.putNumber("vision-x-dead", 45.0)
+        SmartDashboard.putNumber("vision-y-dead", 45.0)
+        SmartDashboard.putNumber("vision-theta-dead", 8.0)
+
+        SmartDashboard.putNumber("vision-x-min", 0.2)
+        SmartDashboard.putNumber("vision-y-min", 0.2)
+        SmartDashboard.putNumber("vision-theta-min", 0.2)
+
+        outputStream = CameraServer.getInstance().putVideo("Blur", 640, 480);
 
     }
 
@@ -35,7 +67,23 @@ class Robot : KnightBot() {
     override fun teleopPeriodic() {
         //vision test
         synchronized(this.line_runner) {
-            print("X: ${this.line_runner.getDX()}, Y: ${this.line_runner.getDY()}, DT: ${this.line_runner.getDTheta()}\n");
+            line_runner.x_cof = SmartDashboard.getNumber("vision-x-cof", 0.007)
+            line_runner.y_cof = SmartDashboard.getNumber("vision-y-cof", 0.007)
+            line_runner.theta_cof = SmartDashboard.getNumber("vision-theta-cof", 0.005)
+
+            line_runner.x_max = SmartDashboard.getNumber("vision-x-max", 0.2)
+            line_runner.y_max = SmartDashboard.getNumber("vision-y-max", 0.2)
+            line_runner.theta_max = SmartDashboard.getNumber("vision-theta-max", 0.1)
+
+            line_runner.x_min = SmartDashboard.getNumber("vision-x-min", 0.2)
+            line_runner.y_min = SmartDashboard.getNumber("vision-y-min", 0.2)
+            line_runner.theta_min = SmartDashboard.getNumber("vision-theta-min", 0.1)
+
+            line_runner.x_dead = SmartDashboard.getNumber("vision-x-dead", 45.0).toInt()
+            line_runner.y_dead = SmartDashboard.getNumber("vision-y-dead", 45.0).toInt()
+            line_runner.theta_dead = SmartDashboard.getNumber("vision-theta-dead", 8.0).toInt()
+
+            outputStream.putFrame(this.line_runner.line_sensing.algorithm.blured);
         }
 
 
@@ -71,12 +119,12 @@ class Robot : KnightBot() {
         //run intake
         when {
             this.controller.getBumper(GenericHID.Hand.kLeft) -> {
-                this.grabMotor1.speed = -0.2
-                this.grabMotor2.speed = 0.2
+                this.grabMotor1.speed = -1.0
+                this.grabMotor2.speed = 1.0
             }
             this.controller.getBumper(GenericHID.Hand.kRight) -> {
-                this.grabMotor1.speed = 0.2
-                this.grabMotor2.speed = -0.2
+                this.grabMotor1.speed = 1.0
+                this.grabMotor2.speed = -1.0
             }
             else -> {
                 this.grabMotor1.speed = 0.0
