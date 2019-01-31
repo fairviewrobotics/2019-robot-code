@@ -39,7 +39,7 @@ class Robot : KnightBot() {
         this.grabMotor1 = PWMTalonSRX(5)
         this.grabMotor2 = PWMTalonSRX(6)
 
-        line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3)
+        line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
         line_runner.start()
 
@@ -58,6 +58,7 @@ class Robot : KnightBot() {
         SmartDashboard.putNumber("vision-x-min", 0.2)
         SmartDashboard.putNumber("vision-y-min", 0.2)
         SmartDashboard.putNumber("vision-theta-min", 0.2)
+        SmartDashboard.putNumber("vision-theta-x-adjust", 0.3)
 
         outputStream = CameraServer.getInstance().putVideo("Blur", 640, 480);
 
@@ -83,6 +84,8 @@ class Robot : KnightBot() {
             line_runner.y_dead = SmartDashboard.getNumber("vision-y-dead", 45.0).toInt()
             line_runner.theta_dead = SmartDashboard.getNumber("vision-theta-dead", 8.0).toInt()
 
+            line_runner.theta_x_adjust = SmartDashboard.getNumber("vision-theta-x-adjust", 0.3)
+
             outputStream.putFrame(this.line_runner.line_sensing.algorithm.blured);
         }
 
@@ -95,13 +98,13 @@ class Robot : KnightBot() {
 
             synchronized(this.line_runner) {
                 if(this.controller.getXButton()){
-                    dx = -this.line_runner.getDX()
+                    dx = -this.line_runner.dx
                 }
                 if(this.controller.getYButton()){
-                    dy = this.line_runner.getDY()
+                    dy = this.line_runner.dy
                 }
                 if(this.controller.getAButton()){
-                    dt = this.line_runner.getDTheta()
+                    dt = this.line_runner.dt
                 }
 
                 //run alignment
