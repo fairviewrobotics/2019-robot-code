@@ -1,4 +1,5 @@
 package frc.team2036.robot.vision.linesensing;
+import frc.team2036.robot.knightarmor.*;
 
 
 /* VisionRunner: run the line sensing algorithm in a different thread, and calculate needed x, y, and theta movement
@@ -6,15 +7,24 @@ package frc.team2036.robot.vision.linesensing;
 
 class VisionRunner(val camera_index: Int, public var x_target: Int, public var y_target: Int, public var x_cof: Double, public var y_cof: Double, public var theta_cof: Double, public var x_min: Double, public var y_min: Double, public var theta_min: Double,  public var x_dead: Int, public var y_dead: Int, public var theta_dead: Int, public var x_max: Double, public var y_max: Double, public var theta_max: Double, public var theta_x_adjust: Double): Thread() {
 
-    public var dx: Double = 0.0;
-    public var dy: Double = 0.0;
-    public var dt: Double = 0.0;
+    public var dx: Double = 0.0
+    public var dy: Double = 0.0
+    public var dt: Double = 0.0
 
-    public var line_sensing: LineSense;
+    public var line_sensing: LineSense
+
+    public var camera_open: Boolean = false
 
     init {
         line_sensing = LineSense()
-        line_sensing.openCamera(camera_index)
+        try {
+            line_sensing.openCamera(camera_index)
+            camera_open = true
+            KnightScribe.log("Line Tracking Camera Opened\n", KnightScribeLogLevel.INFO)
+        } catch(e: Exception){
+            camera_open = false
+            KnightScribe.log("Line Tracking Failed to Open Camera\nLine Tracking is Disabled\n", KnightScribeLogLevel.WARNING)
+        }
     }
 
     public override fun run(){
@@ -25,6 +35,12 @@ class VisionRunner(val camera_index: Int, public var x_target: Int, public var y
 
     //calculate dx, dy, and dtheta
     public fun calculate_dvars(){
+        if(!this.camera_open){
+            this.dx = 0.0
+            this.dy = 0.0
+            this.dt = 0.0
+            return;
+        }
         synchronized(this.line_sensing){
 
             var diffTheta = this.getDiffTheta()

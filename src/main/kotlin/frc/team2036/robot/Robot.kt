@@ -33,7 +33,7 @@ class Robot : KnightBot() {
 
 
     override fun robotInit() {
-        this.controller = XboxController(1)
+        this.controller = XboxController(0)
         this.drivetrain = MecanumDrive(PWMTalonSRX(0), PWMTalonSRX(1), PWMTalonSRX(2), PWMTalonSRX(3))
         this.elevatorMotor = PWMTalonSRX(4)
         this.grabMotor1 = PWMTalonSRX(5)
