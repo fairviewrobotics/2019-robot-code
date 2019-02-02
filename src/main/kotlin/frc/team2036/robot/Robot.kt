@@ -1,7 +1,7 @@
 package frc.team2036.robot
 
 import edu.wpi.first.wpilibj.GenericHID
-import edu.wpi.first.wpilibj.PWMTalonSRX
+import edu.wpi.first.wpilibj.CANTalon
 import frc.team2036.robot.knightarmor.KnightBot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.drive.MecanumDrive
@@ -22,9 +22,9 @@ class Robot : KnightBot() {
 
     lateinit var controller: XboxController
     lateinit var drivetrain: MecanumDrive
-    lateinit var elevatorMotor: PWMTalonSRX
-    lateinit var grabMotor1: PWMTalonSRX
-    lateinit var grabMotor2: PWMTalonSRX
+    lateinit var elevatorMotor: CANTalon
+    lateinit var grabMotor1: CANTalon
+    lateinit var grabMotor2: CANTalon
 
     lateinit var line_runner: VisionRunner
 
@@ -34,10 +34,10 @@ class Robot : KnightBot() {
 
     override fun robotInit() {
         this.controller = XboxController(0)
-        this.drivetrain = MecanumDrive(PWMTalonSRX(0), PWMTalonSRX(1), PWMTalonSRX(2), PWMTalonSRX(3))
-        this.elevatorMotor = PWMTalonSRX(4)
-        this.grabMotor1 = PWMTalonSRX(5)
-        this.grabMotor2 = PWMTalonSRX(6)
+        this.drivetrain = MecanumDrive(CANTalon(1), CANTalon(2), CANTalon(3), CANTalon(4))
+        this.elevatorMotor = CANTalon(20)
+        this.grabMotor1 = CANTalon(10)
+        this.grabMotor2 = CANTalon(11)
 
         line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
