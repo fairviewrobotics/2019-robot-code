@@ -1,11 +1,12 @@
 package frc.team2036.robot
 
 import edu.wpi.first.wpilibj.GenericHID
-import edu.wpi.first.wpilibj.CANTalon
+// import edu.wpi.first.wpilibj.TalonSRX
 import frc.team2036.robot.knightarmor.KnightBot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.drive.MecanumDrive
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 
 import frc.team2036.robot.vision.linesensing.*;
 
@@ -22,9 +23,9 @@ class Robot : KnightBot() {
 
     lateinit var controller: XboxController
     lateinit var drivetrain: MecanumDrive
-    lateinit var elevatorMotor: CANTalon
-    lateinit var grabMotor1: CANTalon
-    lateinit var grabMotor2: CANTalon
+    lateinit var elevatorMotor: WPI_TalonSRX
+    lateinit var grabMotor1: WPI_TalonSRX
+    lateinit var grabMotor2: WPI_TalonSRX
 
     lateinit var line_runner: VisionRunner
 
@@ -34,10 +35,10 @@ class Robot : KnightBot() {
 
     override fun robotInit() {
         this.controller = XboxController(0)
-        this.drivetrain = MecanumDrive(CANTalon(1), CANTalon(2), CANTalon(3), CANTalon(4))
-        this.elevatorMotor = CANTalon(20)
-        this.grabMotor1 = CANTalon(10)
-        this.grabMotor2 = CANTalon(11)
+        this.drivetrain = MecanumDrive(WPI_TalonSRX(1), WPI_TalonSRX(2), WPI_TalonSRX(3), WPI_TalonSRX(4))
+        this.elevatorMotor = WPI_TalonSRX(20)
+        this.grabMotor1 = WPI_TalonSRX(10)
+        this.grabMotor2 = WPI_TalonSRX(11)
 
         line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
@@ -90,6 +91,8 @@ class Robot : KnightBot() {
         }
 
 
+
+
         //run drive train
         if(this.controller.getBButton()){
             var dx: Double = 0.0
@@ -113,25 +116,26 @@ class Robot : KnightBot() {
                 }
         } else {
             //run teleop
+            println(this.controller.getX(GenericHID.Hand.kLeft))
             this.drivetrain.driveCartesian(this.controller.getX(GenericHID.Hand.kLeft), -this.controller.getY(GenericHID.Hand.kLeft), this.controller.getX(GenericHID.Hand.kRight))
         }
         //run elevator
-        this.elevatorMotor.speed = this.controller.getY(GenericHID.Hand.kRight) * 1.0;
+        this.elevatorMotor.set(this.controller.getY(GenericHID.Hand.kRight) * 1.0)
         //this.drivetrain.driveCartesian(1.0, 0.0, 0.0);
 
         //run intake
         when {
             this.controller.getBumper(GenericHID.Hand.kLeft) -> {
-                this.grabMotor1.speed = -1.0
-                this.grabMotor2.speed = 1.0
+                this.grabMotor1.set(-1.0)
+                this.grabMotor2.set(1.0)
             }
             this.controller.getBumper(GenericHID.Hand.kRight) -> {
-                this.grabMotor1.speed = 1.0
-                this.grabMotor2.speed = -1.0
+                this.grabMotor1.set(1.0)
+                this.grabMotor2.set(-1.0)
             }
             else -> {
-                this.grabMotor1.speed = 0.0
-                this.grabMotor2.speed = 0.0
+                this.grabMotor1.set(0.0)
+                this.grabMotor2.set(0.0)
             }
     }
 
