@@ -22,7 +22,7 @@ import org.opencv.objdetect.*;
 
 public class LineSense {
     public Mat image = new Mat();
-    private VideoCapture cam;
+    public VideoCapture cam;
     public LineSensingAlgorithm algorithm = new LineSensingAlgorithm();
 
     static {
@@ -31,9 +31,9 @@ public class LineSense {
 
     public void openCamera(int index) {
         VideoCapture camera = new VideoCapture(index);
-        if(!camera.isOpened()){
-            throw new RuntimeException("Camera will not open");
-        }
+        // if(!camera.isOpened()){
+        //     throw new RuntimeException("Camera will not open");
+        // }
 
         cam = camera;
     }

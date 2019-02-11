@@ -17,18 +17,18 @@ class VisionRunner(val camera_index: Int, public var x_target: Int, public var y
 
     init {
         line_sensing = LineSense()
-        try {
-            line_sensing.openCamera(camera_index)
-            camera_open = true
+        line_sensing.openCamera(camera_index)
+        camera_open = line_sensing.cam.isOpened()
+        if(camera_open){
             KnightScribe.log("Line Tracking Camera Opened\n", KnightScribeLogLevel.INFO)
-        } catch(e: Exception){
-            camera_open = false
-            KnightScribe.log("Line Tracking Failed to Open Camera\nLine Tracking is Disabled\n", KnightScribeLogLevel.WARNING)
+        } else {
+            KnightScribe.log("Camera Failed to Open. Line Tracking is Disabled.", KnightScribeLogLevel.WARNING)
         }
+        
     }
 
     public override fun run(){
-        while(true){
+        while(camera_open){
             this.line_sensing.runAlgorithm();
         }
     }

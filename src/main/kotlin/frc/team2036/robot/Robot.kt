@@ -2,6 +2,7 @@ package frc.team2036.robot
 
 import edu.wpi.first.wpilibj.GenericHID
 // import edu.wpi.first.wpilibj.TalonSRX
+import edu.wpi.first.wpilibj.Spark
 import frc.team2036.robot.knightarmor.KnightBot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.drive.MecanumDrive
@@ -20,26 +21,44 @@ import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 
+// OPENCV
+import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
+
+
+import org.opencv.core.*;
+import org.opencv.core.Core.*;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.*;
+import org.opencv.objdetect.*;
+
 class Robot : KnightBot() {
 
     lateinit var controller: XboxController
     lateinit var drivetrain: MecanumDrive
     lateinit var elevatorMotor: WPI_TalonSRX
+    lateinit var rearElevatorMotor: WPI_TalonSRX
     lateinit var grabMotor1: WPI_VictorSPX
     lateinit var grabMotor2: WPI_VictorSPX
+    lateinit var hatchIntake: Spark
 
     lateinit var line_runner: VisionRunner
 
+    lateinit var frontCamera: VideoCapture
+
     lateinit var outputStream: CvSource
 
-
+    lateinit var frontCameraStream: CvSource
+    lateinit var frontImageMat: Mat
 
     override fun robotInit() {
         this.controller = XboxController(0)
         this.drivetrain = MecanumDrive(WPI_TalonSRX(1), WPI_TalonSRX(2), WPI_TalonSRX(3), WPI_TalonSRX(4))
         this.elevatorMotor = WPI_TalonSRX(20)
+        this.rearElevatorMotor = WPI_TalonSRX(21)
         this.grabMotor1 = WPI_VictorSPX(10)
         this.grabMotor2 = WPI_VictorSPX(11)
+        this.hatchIntake = Spark(0)
 
         line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
@@ -62,8 +81,11 @@ class Robot : KnightBot() {
         SmartDashboard.putNumber("vision-theta-min", 0.2)
         SmartDashboard.putNumber("vision-theta-x-adjust", 0.3)
 
-        outputStream = CameraServer.getInstance().putVideo("Blur", 640, 480);
+        outputStream = CameraServer.getInstance().putVideo("Blur", 240, 180);
+        frontCameraStream = CameraServer.getInstance().putVideo("Front Camera", 640, 480);
 
+        frontCamera = VideoCapture(1)
+        frontImageMat = Mat()
     }
 
 
@@ -88,10 +110,15 @@ class Robot : KnightBot() {
 
             line_runner.theta_x_adjust = SmartDashboard.getNumber("vision-theta-x-adjust", 0.3)
 
-            outputStream.putFrame(this.line_runner.line_sensing.algorithm.blured);
+            if(line_runner.camera_open){
+                outputStream.putFrame(this.line_runner.line_sensing.algorithm.blured)
+            }
         }
 
-
+        if (this.frontCamera.isOpened()) {
+            this.frontCamera.read(frontImageMat)
+            frontCameraStream.putFrame(frontImageMat)
+        }
 
 
         //run drive train
@@ -117,48 +144,54 @@ class Robot : KnightBot() {
                 }
         } else {
             //run teleop
-            println(this.controller.getX(GenericHID.Hand.kLeft))
             this.drivetrain.driveCartesian(-this.controller.getX(GenericHID.Hand.kLeft), -this.controller.getY(GenericHID.Hand.kLeft), this.controller.getX(GenericHID.Hand.kRight))
         }
         //run elevator
-        // when {
-        //     this.controller.getPOV()
-        // }
-        // this.elevatorMotor.set(this.controller.getPOV())
         this.elevatorMotor.set(this.controller.getY(GenericHID.Hand.kRight) * 1.0)
-        //this.drivetrain.driveCartesian(1.0, 0.0, 0.0);
 
         //run intake
 
         val up = this.controller.getTriggerAxis(GenericHID.Hand.kLeft)
         val down = this.controller.getTriggerAxis(GenericHID.Hand.kRight)
         if (up > 0) {
-            this.grabMotor2.set(up)
+            this.hatchIntake.set(up)
         } else {
-            this.grabMotor2.set(-down)
-        }
-        // this.grabMotor2.set(this.controller.getTriggerAxis(GenericHID.Hand.kRight))
-
-        var i = 0
-        while (i < 9) {
-            println("PORT " + this.controller.getPOV(i).toString())
-            i++
+            this.hatchIntake.set(-down)
         }
 
-        // when {
-        //     this.controller.getBumper(GenericHID.Hand.kLeft) -> {
-        //         this.grabMotor1.set(-1.0)
-        //         this.grabMotor2.set(1.0)
-        //     }
-        //     this.controller.getBumper(GenericHID.Hand.kRight) -> {
-        //         this.grabMotor1.set(1.0)
-        //         this.grabMotor2.set(-1.0)
-        //     }
-        //     else -> {
-        //         this.grabMotor1.set(0.0)
-        //         this.grabMotor2.set(0.0)
-        //     }
-    // }
+        when {
+            this.controller.getPOV(0) == 0 -> {
+                this.elevatorMotor.set(-1.0)
+            }
+            this.controller.getPOV(0) == 180 -> {
+                this.elevatorMotor.set(1.0)
+            }
+            this.controller.getPOV(0) == 90 -> {
+                this.rearElevatorMotor.set(1.0)
+            }
+            this.controller.getPOV(0) == 270 -> {
+                this.rearElevatorMotor.set(-1.0)
+            }
+            else -> {
+                this.elevatorMotor.set(0.0)
+                this.rearElevatorMotor.set(0.0)
+            }
+        }
+
+        when {
+            this.controller.getBumper(GenericHID.Hand.kLeft) -> {
+                this.grabMotor1.set(-1.0)
+                this.grabMotor2.set(1.0)
+            }
+            this.controller.getBumper(GenericHID.Hand.kRight) -> {
+                this.grabMotor1.set(1.0)
+                this.grabMotor2.set(-1.0)
+            }
+            else -> {
+                this.grabMotor1.set(0.0)
+                this.grabMotor2.set(0.0)
+            }
+        }
 
 
     }
