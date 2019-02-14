@@ -1,6 +1,6 @@
 package frc.team2036.robot
 
-import edu.wpi.first.wpilibj.GenericHID
+import edu.wpi.first.wpilibj.Joystick
 // import edu.wpi.first.wpilibj.TalonSRX
 import edu.wpi.first.wpilibj.Spark
 import frc.team2036.robot.knightarmor.KnightBot
@@ -9,8 +9,6 @@ import edu.wpi.first.wpilibj.drive.MecanumDrive
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX
-
-import frc.team2036.robot.vision.linesensing.*;
 
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -33,8 +31,10 @@ import org.opencv.imgproc.*;
 import org.opencv.objdetect.*;
 
 class Robot : KnightBot() {
-
-    lateinit var controller: XboxController
+    //left joystick
+    lateinit var controller0: Joystick
+    //right joystick
+    lateinit var controller1: Joystick
     lateinit var drivetrain: MecanumDrive
     lateinit var elevatorMotor: WPI_TalonSRX
     lateinit var rearElevatorMotor: WPI_TalonSRX
@@ -42,7 +42,9 @@ class Robot : KnightBot() {
     lateinit var grabMotor2: WPI_VictorSPX
     lateinit var hatchIntake: Spark
 
-    lateinit var line_runner: VisionRunner
+    //lateinit var line_runner: VisionRunner
+
+    lateinit var streaming: Streaming
 
     lateinit var frontCamera: VideoCapture
 
@@ -52,19 +54,20 @@ class Robot : KnightBot() {
     lateinit var frontImageMat: Mat
 
     override fun robotInit() {
-        this.controller = XboxController(0)
+        this.controller0 = Joystick(0)
+        this.controller1 = Joystick(1)
         this.drivetrain = MecanumDrive(WPI_TalonSRX(1), WPI_TalonSRX(2), WPI_TalonSRX(3), WPI_TalonSRX(4))
         this.elevatorMotor = WPI_TalonSRX(20)
         this.rearElevatorMotor = WPI_TalonSRX(21)
         this.grabMotor1 = WPI_VictorSPX(10)
         this.grabMotor2 = WPI_VictorSPX(11)
-        this.hatchIntake = Spark(0)
+        this.hatchIntake = Spark(9)
 
-        line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
-        line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
-        line_runner.start()
+        //line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
+        //line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
+        //line_runner.start()
 
-        SmartDashboard.putNumber("vision-x-cof", 0.007)
+        /* SmartDashboard.putNumber("vision-x-cof", 0.007)
         SmartDashboard.putNumber("vision-y-cof", 0.007)
         SmartDashboard.putNumber("vision-theta-cof", 0.005)
 
@@ -79,19 +82,18 @@ class Robot : KnightBot() {
         SmartDashboard.putNumber("vision-x-min", 0.2)
         SmartDashboard.putNumber("vision-y-min", 0.2)
         SmartDashboard.putNumber("vision-theta-min", 0.2)
-        SmartDashboard.putNumber("vision-theta-x-adjust", 0.3)
+        SmartDashboard.putNumber("vision-theta-x-adjust", 0.3)*/
 
-        outputStream = CameraServer.getInstance().putVideo("Blur", 240, 180);
-        frontCameraStream = CameraServer.getInstance().putVideo("Front Camera", 640, 480);
-
-        frontCamera = VideoCapture(1)
-        frontImageMat = Mat()
+        streaming = Streaming()
+        streaming.start()
     }
 
 
     override fun teleopPeriodic() {
+        //this.frontImageMat.clear()
+
         //vision test
-        synchronized(this.line_runner) {
+        /* synchronized(this.line_runner) {
             line_runner.x_cof = SmartDashboard.getNumber("vision-x-cof", 0.007)
             line_runner.y_cof = SmartDashboard.getNumber("vision-y-cof", 0.007)
             line_runner.theta_cof = SmartDashboard.getNumber("vision-theta-cof", 0.005)
@@ -113,16 +115,20 @@ class Robot : KnightBot() {
             if(line_runner.camera_open){
                 outputStream.putFrame(this.line_runner.line_sensing.algorithm.blured)
             }
-        }
+    }*/
 
-        if (this.frontCamera.isOpened()) {
+        /*if (this.frontCamera.isOpened()) {
             this.frontCamera.read(frontImageMat)
+            Imgproc.resize(frontImageMat, frontImageMat, Size(320.0, 200.0))
+            Imgproc.cvtColor(frontImageMat, frontImageMat, Imgproc.COLOR_BGR2GRAY);
             frontCameraStream.putFrame(frontImageMat)
-        }
+        } else {
+            //println("Not open")
+        }*/
 
 
         //run drive train
-        if(this.controller.getBButton()){
+        /* if(this.controller.getBButton()){
             var dx: Double = 0.0
             var dy: Double = 0.0
             var dt: Double = 0.0
@@ -142,48 +148,58 @@ class Robot : KnightBot() {
                 this.drivetrain.driveCartesian(dx, dy, dt);
                     //this.drivetrain.driveCartesian(0.0, 0.0, this.line_runner.getDTheta());
                 }
-        } else {
+        } else {*/
             //run teleop
-            this.drivetrain.driveCartesian(-this.controller.getX(GenericHID.Hand.kLeft), -this.controller.getY(GenericHID.Hand.kLeft), this.controller.getX(GenericHID.Hand.kRight))
-        }
+            val speed: Double = (this.controller1.getZ() - 1.0) * -0.5
+            this.drivetrain.driveCartesian(-this.controller0.getX()*speed, -this.controller0.getY()*speed, this.controller1.getX()*speed)
+        //}
         //run elevator
-        this.elevatorMotor.set(this.controller.getY(GenericHID.Hand.kRight) * 1.0)
+
 
         //run intake
 
-        val up = this.controller.getTriggerAxis(GenericHID.Hand.kLeft)
-        val down = this.controller.getTriggerAxis(GenericHID.Hand.kRight)
-        if (up > 0) {
-            this.hatchIntake.set(up)
-        } else {
-            this.hatchIntake.set(-down)
+        when {
+            this.controller1.getRawButton(5) -> {
+                this.hatchIntake.set(1.0)
+            }
+            this.controller1.getRawButton(4) -> {
+                this.hatchIntake.set(-1.0)
+            }
+            else -> {
+                this.hatchIntake.set(0.0)
+            }
         }
 
         when {
-            this.controller.getPOV(0) == 0 -> {
+            this.controller1.getRawButton(3) -> {
                 this.elevatorMotor.set(-1.0)
             }
-            this.controller.getPOV(0) == 180 -> {
+            this.controller1.getRawButton(2) -> {
                 this.elevatorMotor.set(1.0)
-            }
-            this.controller.getPOV(0) == 90 -> {
-                this.rearElevatorMotor.set(1.0)
-            }
-            this.controller.getPOV(0) == 270 -> {
-                this.rearElevatorMotor.set(-1.0)
             }
             else -> {
                 this.elevatorMotor.set(0.0)
+            }
+        }
+
+        when {
+            this.controller0.getRawButton(3) -> {
+                this.rearElevatorMotor.set(1.0)
+            }
+            this.controller0.getRawButton(2) -> {
+                this.rearElevatorMotor.set(-1.0)
+            }
+            else -> {
                 this.rearElevatorMotor.set(0.0)
             }
         }
 
         when {
-            this.controller.getBumper(GenericHID.Hand.kLeft) -> {
-                this.grabMotor1.set(-1.0)
-                this.grabMotor2.set(1.0)
+            this.controller0.getRawButton(1) -> {
+                this.grabMotor1.set(-0.5)
+                this.grabMotor2.set(0.5)
             }
-            this.controller.getBumper(GenericHID.Hand.kRight) -> {
+            this.controller1.getRawButton(1) -> {
                 this.grabMotor1.set(1.0)
                 this.grabMotor2.set(-1.0)
             }
