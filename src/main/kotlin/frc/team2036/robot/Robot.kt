@@ -53,7 +53,9 @@ class Robot : KnightBot() {
     lateinit var frontCameraStream: CvSource
     lateinit var frontImageMat: Mat
 
-    override fun robotInit() {
+    lateinit var encoder: Encoder
+
+    fun init_system(){
         this.controller0 = Joystick(0)
         this.controller1 = Joystick(1)
         this.drivetrain = MecanumDrive(WPI_TalonSRX(1), WPI_TalonSRX(2), WPI_TalonSRX(3), WPI_TalonSRX(4))
@@ -86,10 +88,17 @@ class Robot : KnightBot() {
 
         streaming = Streaming()
         streaming.start()
+
+        encoder = Encoder(0,1)
+        encoder.start()
     }
 
 
-    override fun teleopPeriodic() {
+    override fun robotInit() {
+        this.init_system()
+    }
+
+    fun mainLoop() {
         //this.frontImageMat.clear()
 
         //vision test
@@ -153,8 +162,6 @@ class Robot : KnightBot() {
             val speed: Double = (this.controller1.getZ() - 1.0) * -0.5
             this.drivetrain.driveCartesian(-this.controller0.getX()*speed, -this.controller0.getY()*speed, this.controller1.getX()*speed)
         //}
-        //run elevator
-
 
         //run intake
 
@@ -170,6 +177,8 @@ class Robot : KnightBot() {
             }
         }
 
+        /* run elevator */
+
         when {
             this.controller1.getRawButton(3) -> {
                 this.elevatorMotor.set(-1.0)
@@ -182,6 +191,8 @@ class Robot : KnightBot() {
             }
         }
 
+        /* run rear elevator */
+
         when {
             this.controller0.getRawButton(3) -> {
                 this.rearElevatorMotor.set(1.0)
@@ -193,6 +204,8 @@ class Robot : KnightBot() {
                 this.rearElevatorMotor.set(0.0)
             }
         }
+
+        /* run ball intake */
 
         when {
             this.controller0.getRawButton(1) -> {
@@ -209,7 +222,19 @@ class Robot : KnightBot() {
             }
         }
 
-
+        /* print encoder pos */
+        synchronized(this.encoder){
+            println(this.encoder.pos)
+        }
     }
+
+    override fun teleopPeriodic(){
+        this.mainLoop()
+    }
+
+     override fun autonomousPeriodic(){
+        this.mainLoop()
+    }
+
 
 }
