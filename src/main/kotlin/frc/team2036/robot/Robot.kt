@@ -10,6 +10,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX
 
+import edu.wpi.first.wpilibj.Talon
+
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
@@ -37,10 +39,11 @@ class Robot : KnightBot() {
     lateinit var controller1: Joystick
     lateinit var drivetrain: MecanumDrive
     lateinit var elevatorMotor: WPI_TalonSRX
-    lateinit var rearElevatorMotor: WPI_TalonSRX
+    //lateinit var elevator: Elevator
+    lateinit var rearElevatorMotor: Spark
     lateinit var grabMotor1: WPI_VictorSPX
-    lateinit var grabMotor2: WPI_VictorSPX
-    lateinit var hatchIntake: Spark
+    lateinit var grabMotor2: Talon
+    lateinit var hatchIntake: Talon
 
     //lateinit var line_runner: VisionRunner
 
@@ -53,17 +56,18 @@ class Robot : KnightBot() {
     lateinit var frontCameraStream: CvSource
     lateinit var frontImageMat: Mat
 
-    lateinit var encoder: Encoder
 
     fun init_system(){
+
         this.controller0 = Joystick(0)
         this.controller1 = Joystick(1)
         this.drivetrain = MecanumDrive(WPI_TalonSRX(1), WPI_TalonSRX(2), WPI_TalonSRX(3), WPI_TalonSRX(4))
         this.elevatorMotor = WPI_TalonSRX(20)
-        this.rearElevatorMotor = WPI_TalonSRX(21)
-        this.grabMotor1 = WPI_VictorSPX(10)
-        this.grabMotor2 = WPI_VictorSPX(11)
-        this.hatchIntake = Spark(9)
+        //elevator = Elevator(encoder, 20)
+        this.rearElevatorMotor = Spark(8)
+        this.grabMotor1 = WPI_VictorSPX(11)
+        this.grabMotor2 = Talon(7)
+        this.hatchIntake = Talon(9)
 
         //line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         //line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
@@ -88,9 +92,6 @@ class Robot : KnightBot() {
 
         streaming = Streaming()
         streaming.start()
-
-        encoder = Encoder(0,1)
-        encoder.start()
     }
 
 
@@ -168,6 +169,7 @@ class Robot : KnightBot() {
         when {
             this.controller1.getRawButton(5) -> {
                 this.hatchIntake.set(1.0)
+                println("running")
             }
             this.controller1.getRawButton(4) -> {
                 this.hatchIntake.set(-1.0)
@@ -209,12 +211,12 @@ class Robot : KnightBot() {
 
         when {
             this.controller0.getRawButton(1) -> {
-                this.grabMotor1.set(-0.5)
-                this.grabMotor2.set(0.5)
+                this.grabMotor1.set(-1.0)
+                this.grabMotor2.set(1.0)
             }
             this.controller1.getRawButton(1) -> {
-                this.grabMotor1.set(1.0)
-                this.grabMotor2.set(-1.0)
+                this.grabMotor1.set(0.5)
+                this.grabMotor2.set(-0.5)
             }
             else -> {
                 this.grabMotor1.set(0.0)
@@ -222,10 +224,7 @@ class Robot : KnightBot() {
             }
         }
 
-        /* print encoder pos */
-        synchronized(this.encoder){
-            println(this.encoder.pos)
-        }
+
     }
 
     override fun teleopPeriodic(){
