@@ -7,6 +7,7 @@ import frc.team2036.robot.knightarmor.KnightBot
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.drive.MecanumDrive
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import edu.wpi.first.wpilibj.Preferences
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX
 
@@ -56,6 +57,9 @@ class Robot : KnightBot() {
     lateinit var frontCameraStream: CvSource
     lateinit var frontImageMat: Mat
 
+    lateinit var elevatorPos: DoubleArray
+    val numElevatorPos: Int = 6
+
 
     fun init_system(){
 
@@ -68,6 +72,8 @@ class Robot : KnightBot() {
         this.grabMotor1 = WPI_VictorSPX(11)
         this.grabMotor2 = Talon(7)
         this.hatchIntake = Talon(9)
+
+        this.elevatorPos = DoubleArray(numElevatorPos)
 
         //line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         //line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
@@ -92,8 +98,18 @@ class Robot : KnightBot() {
 
         streaming = Streaming()
         streaming.start()
+
+        readElevatorVals()
     }
 
+    /* Read in the elevator encoder values from the smartDashboard prefrences */
+    fun readElevatorVals(){
+        val prefs = Preferences.getInstance()
+        for(ind in 0..(numElevatorPos -1)){
+            elevatorPos[ind] = prefs.getDouble("pos$ind", 1.0)
+        }
+
+    }
 
     override fun robotInit() {
         this.init_system()
@@ -223,6 +239,14 @@ class Robot : KnightBot() {
                 this.grabMotor2.set(0.0)
             }
         }
+
+        if(this.controller0.getRawButton(6)){
+            streaming.stop()
+            streaming = Streaming()
+            streaming.start()
+            readElevatorVals()
+        }
+
 
 
     }
