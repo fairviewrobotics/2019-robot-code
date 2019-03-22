@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.Preferences
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX
+import edu.wpi.first.wpilibj.Timer
 
 import edu.wpi.first.wpilibj.Talon
 
@@ -59,6 +60,7 @@ class Robot : KnightBot() {
 
     lateinit var elevatorPos: DoubleArray
     val numElevatorPos: Int = 6
+    var elevatorTime: Dobule = 0.0
 
 
     fun init_system(){
@@ -245,6 +247,26 @@ class Robot : KnightBot() {
             streaming = Streaming()
             streaming.start()
             readElevatorVals()
+        }
+
+        when { 
+            this.controller0.getRawButton(7) -> {
+                Timer.start()
+                Timer.reset()
+                while True {
+                    elevatorTime = Time.get()
+                    if (elevatorTime<1) {
+                        this.rearElevatorMotor.set(0.75)
+                    }
+                    if (elevatorTime<2) {
+                        this.elevatorMotor.set(-1.0)    
+                    } else {
+                        this.rearElevatorMotor.set(0.0)
+                        this.elevatorMotor.set(0.0)
+                        Timer.stop()
+                    }
+                }
+            }
         }
 
 
