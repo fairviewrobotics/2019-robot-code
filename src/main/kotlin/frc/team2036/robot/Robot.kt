@@ -60,7 +60,7 @@ class Robot : KnightBot() {
 
     lateinit var elevatorPos: DoubleArray
     val numElevatorPos: Int = 6
-    var elevatorTime: Dobule = 0.0
+    var elevatorTime: Double = 0.0
 
 
     fun init_system(){
@@ -253,7 +253,7 @@ class Robot : KnightBot() {
             this.controller0.getRawButton(7) -> {
                 Timer.start()
                 Timer.reset()
-                while True {
+                while(True){
                     elevatorTime = Time.get()
                     if (elevatorTime<1) {
                         this.rearElevatorMotor.set(0.75)
