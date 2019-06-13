@@ -60,7 +60,15 @@ class Robot : KnightBot() {
 
     lateinit var elevatorPos: DoubleArray
     val numElevatorPos: Int = 6
+
+    val timer: Timer
     var elevatorTime: Double = 0.0
+    var pElevatorButton: Boolean = false
+    var autoStartEnabled: Boolean = false
+
+    init {
+        timer = Timer()
+    }
 
 
     fun init_system(){
@@ -187,7 +195,6 @@ class Robot : KnightBot() {
         when {
             this.controller1.getRawButton(5) -> {
                 this.hatchIntake.set(1.0)
-                println("running")
             }
             this.controller1.getRawButton(4) -> {
                 this.hatchIntake.set(-1.0)
@@ -249,27 +256,26 @@ class Robot : KnightBot() {
             readElevatorVals()
         }
 
-        when { 
-            this.controller0.getRawButton(7) -> {
-                Timer.start()
-                Timer.reset()
-                while(True){
-                    elevatorTime = Time.get()
-                    if (elevatorTime<1) {
-                        this.rearElevatorMotor.set(0.75)
-                    }
-                    if (elevatorTime<2) {
-                        this.elevatorMotor.set(-1.0)    
-                    } else {
-                        this.rearElevatorMotor.set(0.0)
-                        this.elevatorMotor.set(0.0)
-                        Timer.stop()
-                    }
-                }
-            }
+        if(this.controller0.getRawButton(7) && !pElevatorButton){
+            timer.reset()
+            timer.start()
+            autoStartEnabled = true
         }
 
-
+        if(autoStartEnabled) {
+            elevatorTime = timer.get()
+            if (elevatorTime<2.0) {
+                this.hatchIntake.set(-1.0)
+                this.rearElevatorMotor.set(1.0)
+                this.elevatorMotor.set(1.0)
+            } else {
+                this.hatchIntake.set(0.0)
+                this.rearElevatorMotor.set(0.0)
+                this.elevatorMotor.set(0.0)
+                autoStartEnabled = false
+            }
+        }
+        pElevatorButton = this.controller0.getRawButton(7)
 
     }
 
