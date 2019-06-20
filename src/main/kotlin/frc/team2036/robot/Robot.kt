@@ -11,6 +11,8 @@ import edu.wpi.first.wpilibj.Preferences
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX
 import edu.wpi.first.wpilibj.Timer
+import edu.wpi.first.wpilibj.Encoder
+import edu.wpi.first.wpilibj.CounterBase.EncodingType
 
 import edu.wpi.first.wpilibj.Talon
 
@@ -65,6 +67,7 @@ class Robot : KnightBot() {
     var elevatorTime: Double = 0.0
     var pElevatorButton: Boolean = false
     var autoStartEnabled: Boolean = false
+    lateinit var encoder: Encoder
 
     init {
         timer = Timer()
@@ -84,6 +87,7 @@ class Robot : KnightBot() {
         this.hatchIntake = Talon(9)
 
         this.elevatorPos = DoubleArray(numElevatorPos)
+        this.encoder = Encoder(0, 1, false, EncodingType.k4X)
 
         //line_runner = VisionRunner(0, 120, 150, 0.007, 0.007, 0.005, 0.2, 0.2, 0.1, 45, 45, 8, 0.3, 0.3, 0.3, 0.3)
         //line_runner.line_sensing.algorithm.setDownscaleSize(240, 180)
@@ -126,6 +130,7 @@ class Robot : KnightBot() {
     }
 
     fun mainLoop() {
+        println(encoder.get())
         //this.frontImageMat.clear()
 
         //vision test
@@ -207,6 +212,18 @@ class Robot : KnightBot() {
         /* run elevator */
 
         when {
+            controller0.getRawButton(10) -> {
+                val diff = -100 - encoder.get()
+
+                if (diff < -5) {
+                    elevatorMotor.set(-1.0)
+                } else if (diff > 5) {
+                    elevatorMotor.set(1.0)
+                } else {
+                    elevatorMotor.set(0.0)
+                }
+
+            }
             this.controller1.getRawButton(3) -> {
                 this.elevatorMotor.set(-1.0)
             }
